@@ -4,18 +4,16 @@ version: dev
 slug: nodered
 description: Flow-based programming for the Internet of Things
 url: https://github.com/hassio-addons/addon-node-red
+codenotary: codenotary@frenck.dev
 ingress: true
 ingress_port: 0
 ingress_stream: true
 panel_icon: mdi:sitemap
 init: false
-homeassistant: 0.92.0b2
+homeassistant: 2023.3.0
 arch:
   - aarch64
   - amd64
-  - armhf
-  - armv7
-  - i386
 ports:
   80/tcp: 1880
 ports_description:
@@ -26,19 +24,15 @@ homeassistant_api: true
 host_network: true
 auth_api: true
 uart: true
-gpio: true
-privileged:
-  - SYS_RAWIO
-devices:
-  - /dev/mem
-apparmor: false
 map:
-  - config:rw
+  - addon_config:rw
+  - homeassistant_config:rw
   - media:rw
   - share:rw
   - ssl
+backup_exclude:
+  - "node_modules"
 options:
-  credential_secret: ""
   theme: default
   http_node:
     username: ""
@@ -54,8 +48,8 @@ options:
   init_commands: []
 schema:
   log_level: list(trace|debug|info|notice|warning|error|fatal)?
-  credential_secret: password
-  theme: list(default|dark|dracula|midnight-red|oled|solarized-dark|solarized-light)?
+  credential_secret: password?
+  theme: list(default|aurora|cobalt2|dark|dracula|espresso-libre|github-dark|github-dark-default|github-dark-dimmed|midnight-red|monoindustrial|monokai|monokai-dimmed|noctis|oceanic-next|oled|one-dark-pro|one-dark-pro-darker|solarized-dark|solarized-light|tokyo-night|tokyo-night-light|tokyo-night-storm|totallyinformation|zenburn)?
   http_node:
     username: str
     password: password
@@ -72,3 +66,5 @@ schema:
   init_commands:
     - str
   leave_front_door_open: bool?
+  safe_mode: bool?
+  max_old_space_size: int?
