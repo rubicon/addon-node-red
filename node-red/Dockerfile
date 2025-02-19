@@ -1,9 +1,10 @@
-ARG BUILD_FROM=ghcr.io/hassio-addons/base/amd64:11.0.0
+ARG BUILD_FROM=ghcr.io/hassio-addons/base:17.2.1
 # hadolint ignore=DL3006
 FROM ${BUILD_FROM}
 
 # Copy Node-RED package.json
-COPY package.json requirements.txt /opt/
+COPY package.json /opt/
+COPY node-red-dashboard-show-dashboard.patch /tmp/
 
 # Set workdir
 WORKDIR /opt
@@ -14,48 +15,49 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # Setup base
 RUN \
     apk add --no-cache --virtual .build-dependencies \
-        g++=10.3.1_git20211027-r0 \
-        gcc=10.3.1_git20211027-r0 \
-        libc-dev=0.7.2-r3 \
-        linux-headers=5.10.41-r0 \
-        make=4.3-r0 \
-        py3-pip=20.3.4-r1 \
-        python3-dev=3.9.7-r4 \
+        build-base=0.5-r3 \
+        linux-headers=6.6-r1 \
+        py3-pip=24.3.1-r0 \
+        python3-dev=3.12.9-r0 \
     \
     && apk add --no-cache \
-        git=2.34.1-r0 \
-        nginx=1.20.2-r0 \
-        nodejs=16.13.1-r0 \
-        npm=8.1.3-r0 \
-        openssh-client=8.8_p1-r1 \
-        patch=2.7.6-r7 \
-        python3=3.9.7-r4 \
-    \
-    && npm config set unsafe-perm true \
-    \
-    && pip install --no-cache-dir -r /opt/requirements.txt \
+        git=2.47.2-r0 \
+        icu-data-full=74.2-r0 \
+        nginx=1.26.2-r4 \
+        nodejs=22.13.1-r0 \
+        npm=10.9.1-r0 \
+        openssh-client=9.9_p2-r0 \
+        patch=2.7.6-r10 \
     \
     && npm install \
         --no-audit \
-        --no-optional \
+        --no-fund \
         --no-update-notifier \
-        --only=production \
+        --omit=dev \
         --unsafe-perm \
+    && npm rebuild --build-from-source @serialport/bindings-cpp \
     \
     && npm cache clear --force \
     \
     && echo -e "StrictHostKeyChecking no" >> /etc/ssh/ssh_config \
     \
+    && patch -d /opt/node_modules/node-red-dashboard -p1 \
+             -i /tmp/node-red-dashboard-show-dashboard.patch \
+    \
     && apk del --no-cache --purge .build-dependencies \
     && rm -fr \
-        /tmp/* \
-        /etc/nginx
-
-# Environment variables
-ENV NODE_ICU_DATA=/opt/node_modules/full-icu
+        /etc/nginx \
+        /root/.cache \
+        /root/.npm \
+        /root/.nrpmrc \
+        /tmp/*
 
 # Copy root filesystem
 COPY rootfs /
+
+# Health check
+HEALTHCHECK --start-period=10m \
+    CMD curl --fail http://127.0.0.1:46836 || exit 1
 
 # Build arguments
 ARG BUILD_ARCH
@@ -65,7 +67,6 @@ ARG BUILD_NAME
 ARG BUILD_REF
 ARG BUILD_REPOSITORY
 ARG BUILD_VERSION
-
 
 # Labels
 LABEL \
